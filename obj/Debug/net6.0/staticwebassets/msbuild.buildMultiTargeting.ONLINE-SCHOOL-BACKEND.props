@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\build\ONLINE-SCHOOL-BACKEND.props" />
+</Project>

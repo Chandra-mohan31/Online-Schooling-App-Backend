@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\buildMultiTargeting\ONLINE-SCHOOL-BACKEND.props" />
+</Project>
