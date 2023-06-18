@@ -30,7 +30,7 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
         }
 
 
-        private void sendConfirmationEmail(String confirmationLink,String toEmail)
+        private void sendConfirmationEmail(String emailSubject,String emailMessage,String toEmail)
         {
             toEmail = "testname1234554321@gmail.com";//for testing purposes
             try
@@ -40,11 +40,11 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
                 var email = new MimeMessage();
                 email.From.Add(MailboxAddress.Parse("testname1234554321@gmail.com"));
                 email.To.Add(MailboxAddress.Parse(toEmail));
-                email.Subject = "Confirm your Account for OnlineSchool";
-                string text = $"<div><h1>Online School</h1><a href=\"{confirmationLink}\">Click here to Confirm!</a></div>";
+                email.Subject = emailSubject;
+                
                 email.Body = new TextPart(MimeKit.Text.TextFormat.Html)
                 {
-                    Text = text,
+                    Text = emailMessage,
                     
                 };
 
@@ -82,7 +82,10 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
                 if (result.Succeeded)
                 {
 
-                    sendConfirmationEmail(confirmationLink,user.Email);
+                    String emailSubject = "Confirm your Account for OnlineSchool";
+                    String emailMessage = $"<div><h1>Online School</h1><a href=\"{confirmationLink}\">Click here to Confirm!</a></div>";
+
+                    sendConfirmationEmail(emailSubject,emailMessage,user.Email);
                     return Ok("Registered successfully.");
                 }
                 else
@@ -204,6 +207,50 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
             return BadRequest("Email confirmation failed.");
         }
 
+
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword(String Id)
+        {
+            var user = await _userManager.FindByIdAsync(Id);
+           
+            if (user == null || !(await _userManager.IsEmailConfirmedAsync(user)))
+            {
+                return Ok(); 
+            }
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+
+            Console.WriteLine(token);
+            String emailSubject = "Token for Forgot Password..";
+            String emailMessage = $"<p>{HttpUtility.UrlEncode(token)}</p>";
+            sendConfirmationEmail(emailSubject, emailMessage, user.Email);
+
+            
+
+            return Ok();
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword(String Id,String resetToken,String newPassword)
+        {
+            var user = await _userManager.FindByIdAsync(Id);
+            if (user == null)
+            {
+                return BadRequest("Invalid request");
+            }
+            var decodedToken = HttpUtility.UrlDecode(resetToken);
+            Console.WriteLine(decodedToken);
+            Console.WriteLine("decoded token");
+            var result = await _userManager.ResetPasswordAsync(user, decodedToken, newPassword);
+            Console.WriteLine(result);
+            if (result.Succeeded)
+            {
+                return Ok("Successfully Changed Password!");
+            }
+
+            return BadRequest("Invalid request");
+        }
 
     }
 }
