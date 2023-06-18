@@ -6,5 +6,10 @@ namespace ONLINE_SCHOOL_BACKEND.Models
     {
         
         public DateTime? Dob { get; set; }
+
+
+        public String? ImageUrl { get; set; } 
+
+        public String? EmailConfirmationToken { get; set; }
     }
 }

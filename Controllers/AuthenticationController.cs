@@ -1,11 +1,16 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using MimeKit;
 using ONLINE_SCHOOL_BACKEND.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
+using System.Web;
+using static System.Net.WebRequestMethods;
 
 namespace ONLINE_SCHOOL_BACKEND.Controllers
 {
@@ -24,18 +29,60 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
             _configuration = configuration;
         }
 
+
+        private void sendConfirmationEmail(String confirmationLink,String toEmail)
+        {
+            toEmail = "testname1234554321@gmail.com";//for testing purposes
+            try
+            {
+
+                string fromPassword = _configuration["fromEmailPass"];
+                var email = new MimeMessage();
+                email.From.Add(MailboxAddress.Parse("testname1234554321@gmail.com"));
+                email.To.Add(MailboxAddress.Parse(toEmail));
+                email.Subject = "Confirm your Account for OnlineSchool";
+                string text = $"<div><h1>Online School</h1><a href=\"{confirmationLink}\">Click here to Confirm!</a></div>";
+                email.Body = new TextPart(MimeKit.Text.TextFormat.Html)
+                {
+                    Text = text,
+                    
+                };
+
+                using var smtp = new MailKit.Net.Smtp.SmtpClient();
+                smtp.Connect("smtp.gmail.com", 587, MailKit.Security.SecureSocketOptions.StartTls);
+
+                smtp.Authenticate("testname1234554321@gmail.com", fromPassword);
+
+                smtp.Send(email);
+                smtp.Disconnect(true);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+        }
+
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterModel model)
         {
             if (ModelState.IsValid)
             {
-                var user = new OnlineSchoolUser { UserName = model.Email, Email = model.Email };
-                var result = await _userManager.CreateAsync(user, model.Password);
 
+                var user = new OnlineSchoolUser { UserName = model.UserName, Email = model.Email,PhoneNumber = model.PhoneNumber,Dob = model.dob,ImageUrl = model.ImageUrl };
+                var result = await _userManager.CreateAsync(user, model.Password);
+                var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                var encodedToken = HttpUtility.UrlEncode(token);
+                Console.WriteLine(encodedToken);
+                var confirmationLink = "https://localhost:7274/api/Authentication/confirm-email?userId=" + user.Id + "&token="+encodedToken;
+           
+
+
+                Console.WriteLine(confirmationLink);
+                Console.WriteLine("confirmation link generated!");
                 if (result.Succeeded)
                 {
-                  
 
+                    sendConfirmationEmail(confirmationLink,user.Email);
                     return Ok("Registered successfully.");
                 }
                 else
@@ -83,9 +130,17 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
                 var user = await _userManager.FindByEmailAsync(model.Email);
                 if (user != null && await _userManager.CheckPasswordAsync(user, model.Password))
                 {
-                    var token = GenerateJwtToken(user);
+                    if (user.EmailConfirmed)
+                    {
+                        var token = GenerateJwtToken(user);
 
-                    return Ok(new { AccessToken = token,message="Logged In successfully!" });
+                        return Ok(new { AccessToken = token, message = "Logged In successfully!" });
+                    }
+                    else
+                    {
+                        return Ok(new { message = "Please confirm your Email!" });
+                    }
+                  
                 }
             }
 
@@ -119,6 +174,35 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
 
         }
 
+        [HttpGet("/logout")] 
+        public async Task<IActionResult> Logout()
+        {
+            await _signInManager.SignOutAsync();
+            return Ok("Signed Out successfully!");
+        }
+
+
+
+        [HttpGet("confirm-email")]
+        public async Task<IActionResult> ConfirmEmail(string userId, string token)
+        {
+            Console.WriteLine(userId);
+            Console.WriteLine(token);
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return BadRequest("User not found.");
+            }
+
+            var result = await _userManager.ConfirmEmailAsync(user, token);
+            Console.WriteLine(result);
+            if (result.Succeeded)
+            {
+                return Ok("Email confirmed successfully.");
+            }
+
+            return BadRequest("Email confirmation failed.");
+        }
 
 
     }

@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using ONLINE_SCHOOL_BACKEND.Data;
 using ONLINE_SCHOOL_BACKEND.Models;
+using Microsoft.AspNetCore.Cors;
+
 namespace ONLINE_SCHOOL_BACKEND
 {
     public class Program
@@ -23,6 +25,8 @@ namespace ONLINE_SCHOOL_BACKEND
         .AddEntityFrameworkStores<OnlineSchoolDbContext>()
         .AddDefaultTokenProviders();
 
+            builder.Services.AddCors();
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -31,6 +35,7 @@ namespace ONLINE_SCHOOL_BACKEND
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+            app.UseCors(options => options.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 
             app.UseHttpsRedirection();
 
