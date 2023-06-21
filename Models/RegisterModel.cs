@@ -2,6 +2,7 @@
 
 namespace ONLINE_SCHOOL_BACKEND.Models
 {
+
     public class RegisterModel
     {
 
@@ -21,5 +22,11 @@ namespace ONLINE_SCHOOL_BACKEND.Models
         public String? PhoneNumber { get; set; }
 
         public DateTime? dob { get; set; }
+
+        public String UserRole { get; set; }
+
+        public String? Subject { get; set; }
+
+        public String? Class { get; set; }
     }
 }

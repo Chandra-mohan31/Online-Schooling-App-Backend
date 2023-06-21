@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using MimeKit;
+using ONLINE_SCHOOL_BACKEND.Data;
 using ONLINE_SCHOOL_BACKEND.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -18,15 +20,17 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
     [ApiController]
     public class AuthenticationController : ControllerBase
     {
-
+        private readonly OnlineSchoolDbContext _context;
         private readonly UserManager<OnlineSchoolUser> _userManager;
         private readonly SignInManager<OnlineSchoolUser> _signInManager;
         private readonly IConfiguration _configuration;
-        public AuthenticationController(UserManager<OnlineSchoolUser> userManager, SignInManager<OnlineSchoolUser> signInManager, IConfiguration configuration)
+        public AuthenticationController(OnlineSchoolDbContext context,UserManager<OnlineSchoolUser> userManager, SignInManager<OnlineSchoolUser> signInManager, IConfiguration configuration)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _configuration = configuration;
+            _context = context;
+
         }
 
 
@@ -86,6 +90,37 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
                     String emailMessage = $"<div><h1>Online School</h1><a href=\"{confirmationLink}\">Click here to Confirm!</a></div>";
 
                     sendConfirmationEmail(emailSubject,emailMessage,user.Email);
+                    if(model.UserRole == "teacher")
+                    {
+                        Console.WriteLine(model.Subject);
+                        SchoolSubjects handlingSubject = await _context.subjectsAvailable.FirstOrDefaultAsync(s => s.SubjectName == model.Subject);
+                        if (handlingSubject == null)
+                        {
+                            return NotFound("something went wrong");
+                        }
+                        TeacherSubjects teacherSub = new();
+                        teacherSub.Subject = handlingSubject;
+                        teacherSub.Teacher = user;
+                        _context.TeacherSubjects.Add(teacherSub);
+                        await _context.SaveChangesAsync();
+
+                    }
+                    else if (model.UserRole == "student")
+                    {
+                        Console.WriteLine(model.Class);
+                        SchoolClasses belongingClass = await _context.classesAvailable.FirstOrDefaultAsync(c => c.ClassName == model.Class);
+                        if (belongingClass == null)
+                        {
+                            return NotFound("something went wrong");
+                        }
+                        StudentClasses studentClass = new();
+                        studentClass.Class = belongingClass;
+                        studentClass.Student = user;
+                        _context.StudentClasses.Add(studentClass);
+                        await _context.SaveChangesAsync();
+                      
+                    }
+
                     return Ok("Registered successfully.");
                 }
                 else
