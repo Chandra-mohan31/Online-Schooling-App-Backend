@@ -8,6 +8,13 @@ namespace ONLINE_SCHOOL_BACKEND.Data
     {
         public OnlineSchoolDbContext(DbContextOptions<OnlineSchoolDbContext> options) : base(options) { } 
         
-        public DbSet<OnlineSchoolUser> OnlineSchoolUsers { get; set; }  
+        public DbSet<OnlineSchoolUser> OnlineSchoolUsers { get; set; }
+        public DbSet<SchoolClasses> classesAvailable { get; set; }
+        public DbSet<SchoolSubjects> subjectsAvailable { get; set; }
+        public DbSet<TeacherSubjects> TeacherSubjects { get; set; }
+
+        public DbSet<StudentClasses> StudentClasses { get; set; }
+
+
     }
 }
