@@ -11,5 +11,6 @@ namespace ONLINE_SCHOOL_BACKEND.Models
         public String? ImageUrl { get; set; } 
 
         public String? EmailConfirmationToken { get; set; }
+        public String? Gender { get; set; }
     }
 }

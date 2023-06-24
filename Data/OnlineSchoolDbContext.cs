@@ -15,6 +15,8 @@ namespace ONLINE_SCHOOL_BACKEND.Data
 
         public DbSet<StudentClasses> StudentClasses { get; set; }
 
+        public DbSet<AttendanceModel> Attendance { get; set; }
+
 
     }
 }

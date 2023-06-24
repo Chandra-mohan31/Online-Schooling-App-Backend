@@ -28,5 +28,7 @@ namespace ONLINE_SCHOOL_BACKEND.Models
         public String? Subject { get; set; }
 
         public String? Class { get; set; }
+
+        public String? Gender { get; set; }
     }
 }

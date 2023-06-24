@@ -71,8 +71,14 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
         {
             if (ModelState.IsValid)
             {
+                var alreadyExisiting = await _userManager.FindByEmailAsync(model.Email);
+                if (alreadyExisiting != null)
+                {
+                    return BadRequest(new { errorMessage = "user with the email id already exists!" });
+                }
 
-                var user = new OnlineSchoolUser { UserName = model.UserName, Email = model.Email,PhoneNumber = model.PhoneNumber,Dob = model.dob,ImageUrl = model.ImageUrl };
+
+                var user = new OnlineSchoolUser { UserName = model.UserName, Email = model.Email,PhoneNumber = model.PhoneNumber,Dob = model.dob,ImageUrl = model.ImageUrl,Gender = model.Gender };
                 var result = await _userManager.CreateAsync(user, model.Password);
                 var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                 var encodedToken = HttpUtility.UrlEncode(token);
@@ -96,7 +102,7 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
                         SchoolSubjects handlingSubject = await _context.subjectsAvailable.FirstOrDefaultAsync(s => s.SubjectName == model.Subject);
                         if (handlingSubject == null)
                         {
-                            return NotFound("something went wrong");
+                            return NotFound("Please choose a subject handled!");
                         }
                         TeacherSubjects teacherSub = new();
                         teacherSub.Subject = handlingSubject;
@@ -111,7 +117,10 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
                         SchoolClasses belongingClass = await _context.classesAvailable.FirstOrDefaultAsync(c => c.ClassName == model.Class);
                         if (belongingClass == null)
                         {
-                            return NotFound("something went wrong");
+                            return NotFound(new
+                            {
+                                message = "Please choose a your class"
+                            });
                         }
                         StudentClasses studentClass = new();
                         studentClass.Class = belongingClass;
@@ -121,12 +130,19 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
                       
                     }
 
-                    return Ok("Registered successfully.");
+                    return Ok(new
+                    {
+                        message = "Registered successfully."
+                    });
                 }
                 else
                 {
-                    var errors = result.Errors.Select(e => e.Description);
-                    return BadRequest(errors);
+                    var errors = result.Errors.Select(e => e.Description).ToList();
+                    Console.WriteLine(errors[0]);
+                    //return BadRequest(errors[0]);
+                    return BadRequest(new { errorMessage = errors[0] });
+
+
                 }
             }
 
@@ -178,7 +194,12 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
                     {
                         return Ok(new { message = "Please confirm your Email!" });
                     }
-                  
+
+                }
+                else
+                {
+                    return BadRequest(new { title = "email and password doesnt match!"});
+
                 }
             }
 
@@ -204,7 +225,7 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
             Console.WriteLine("got user details");
             if (decodedToken.Claims.Any())
             {
-                return Ok(user);
+                return Ok( new { currUser = user, message = "user found!" });
             }
 
             return BadRequest("Invaild Access Token");
@@ -216,7 +237,7 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
         public async Task<IActionResult> Logout()
         {
             await _signInManager.SignOutAsync();
-            return Ok("Signed Out successfully!");
+            return Ok(new { message = "Signed Out successfully!" });
         }
 
 
@@ -245,13 +266,13 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
 
 
         [HttpPost("forgot-password")]
-        public async Task<IActionResult> ForgotPassword(String Id)
+        public async Task<IActionResult> ForgotPassword(String email)
         {
-            var user = await _userManager.FindByIdAsync(Id);
+            var user = await _userManager.FindByEmailAsync(email);
            
             if (user == null || !(await _userManager.IsEmailConfirmedAsync(user)))
             {
-                return Ok(); 
+                return NotFound(new { message = "User not found or email not confirmed." });
             }
 
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
@@ -263,16 +284,16 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
 
             
 
-            return Ok();
+            return Ok(new { message = "code sent to registered mail Id" });
         }
 
         [HttpPost("reset-password")]
-        public async Task<IActionResult> ResetPassword(String Id,String resetToken,String newPassword)
+        public async Task<IActionResult> ResetPassword(String email,String resetToken,String newPassword)
         {
-            var user = await _userManager.FindByIdAsync(Id);
+            var user = await _userManager.FindByEmailAsync(email);
             if (user == null)
             {
-                return BadRequest("Invalid request");
+                return BadRequest( new { message = "Invalid request" });
             }
             var decodedToken = HttpUtility.UrlDecode(resetToken);
             Console.WriteLine(decodedToken);
@@ -281,10 +302,10 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
             Console.WriteLine(result);
             if (result.Succeeded)
             {
-                return Ok("Successfully Changed Password!");
+                return Ok(new { message = "Successfully Changed Password!" });
             }
 
-            return BadRequest("Invalid request");
+            return BadRequest( new { message = "Invalid request" });
         }
 
     }

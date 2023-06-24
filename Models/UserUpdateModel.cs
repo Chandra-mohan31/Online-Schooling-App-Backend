@@ -10,6 +10,7 @@
         public DateTime? Dob { get; set; }
 
         public String? ImageUrl { get; set; }
+        
 
     }
 }

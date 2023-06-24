@@ -29,7 +29,7 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
           {
               return NotFound();
           }
-            return await _context.StudentClasses.ToListAsync();
+            return await _context.StudentClasses.Include(student => student.Student).Include(student => student.Class).ToListAsync();
         }
 
         // GET: api/StudentClasses/5
