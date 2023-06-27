@@ -17,6 +17,11 @@ namespace ONLINE_SCHOOL_BACKEND.Data
 
         public DbSet<AttendanceModel> Attendance { get; set; }
 
+        public DbSet<ClassHours> ClassHoursTable { get; set; }
+
+
+        public DbSet<TimeTable> TimeTable { get; set; }
+
 
     }
 }

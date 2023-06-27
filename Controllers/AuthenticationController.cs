@@ -24,12 +24,14 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
         private readonly UserManager<OnlineSchoolUser> _userManager;
         private readonly SignInManager<OnlineSchoolUser> _signInManager;
         private readonly IConfiguration _configuration;
-        public AuthenticationController(OnlineSchoolDbContext context,UserManager<OnlineSchoolUser> userManager, SignInManager<OnlineSchoolUser> signInManager, IConfiguration configuration)
+        private readonly RoleManager<IdentityRole> _roleManager;
+        public AuthenticationController(OnlineSchoolDbContext context,UserManager<OnlineSchoolUser> userManager, RoleManager<IdentityRole> roleManager,SignInManager<OnlineSchoolUser> signInManager, IConfiguration configuration)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _configuration = configuration;
             _context = context;
+            _roleManager = roleManager;
 
         }
 
@@ -96,9 +98,41 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
                     String emailMessage = $"<div><h1>Online School</h1><a href=\"{confirmationLink}\">Click here to Confirm!</a></div>";
 
                     sendConfirmationEmail(emailSubject,emailMessage,user.Email);
-                    if(model.UserRole == "teacher")
+
+
+                    
+
+                    
+
+
+
+
+
+
+
+
+
+
+
+                    if (model.UserRole == "teacher")
                     {
                         Console.WriteLine(model.Subject);
+                        // Assign the role to the user
+                        var roleRes = await _userManager.AddToRoleAsync(user, "Teacher");
+                        Console.WriteLine("Adding role to user result ..................................." + roleRes);
+
+                        //await _context.UserRoles.AddAsync(new IdentityUserRole<string>
+                        //{
+                        //    UserId = user.Id.ToString(),
+                        //    RoleId = "2" // Assuming "2" is the role ID you want to assign
+                        //});
+
+                        //await _context.SaveChangesAsync();
+
+
+
+
+
                         SchoolSubjects handlingSubject = await _context.subjectsAvailable.FirstOrDefaultAsync(s => s.SubjectName == model.Subject);
                         if (handlingSubject == null)
                         {
@@ -114,12 +148,15 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
                     else if (model.UserRole == "student")
                     {
                         Console.WriteLine(model.Class);
+                        var roleRes = await _userManager.AddToRoleAsync(user, "Student");
+                        Console.WriteLine("Adding role to user result ..................................." + roleRes);
+
                         SchoolClasses belongingClass = await _context.classesAvailable.FirstOrDefaultAsync(c => c.ClassName == model.Class);
                         if (belongingClass == null)
                         {
                             return NotFound(new
                             {
-                                message = "Please choose a your class"
+                                message = "Please choose available class"
                             });
                         }
                         StudentClasses studentClass = new();
@@ -182,13 +219,16 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
             if (ModelState.IsValid)
             {
                 var user = await _userManager.FindByEmailAsync(model.Email);
+                //var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+                var roles = _userManager.GetRolesAsync(user).Result[0];
+                Console.WriteLine(roles);
                 if (user != null && await _userManager.CheckPasswordAsync(user, model.Password))
                 {
                     if (user.EmailConfirmed)
                     {
                         var token = GenerateJwtToken(user);
 
-                        return Ok(new { AccessToken = token, message = "Logged In successfully!" });
+                        return Ok(new { AccessToken = token,role = roles, message = "Logged In successfully!" });
                     }
                     else
                     {
@@ -221,11 +261,12 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
 
             Console.WriteLine("User ID: " + userId);
             OnlineSchoolUser user = await _userManager.FindByIdAsync(userId);
+            var userRole = _userManager.GetRolesAsync(user).Result[0];
 
             Console.WriteLine("got user details");
             if (decodedToken.Claims.Any())
             {
-                return Ok( new { currUser = user, message = "user found!" });
+                return Ok( new { currUser = user, message = "user found!",role = userRole });
             }
 
             return BadRequest("Invaild Access Token");
@@ -307,6 +348,8 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
 
             return BadRequest( new { message = "Invalid request" });
         }
+
+        
 
     }
 }
