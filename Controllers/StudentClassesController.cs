@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ONLINE_SCHOOL_BACKEND.Data;
@@ -15,10 +16,13 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
     public class StudentClassesController : ControllerBase
     {
         private readonly OnlineSchoolDbContext _context;
+        private readonly UserManager<OnlineSchoolUser> _userManager;
 
-        public StudentClassesController(OnlineSchoolDbContext context)
+
+        public StudentClassesController(OnlineSchoolDbContext context,UserManager<OnlineSchoolUser> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
 
         // GET: api/StudentClasses
@@ -32,54 +36,8 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
             return await _context.StudentClasses.Include(student => student.Student).Include(student => student.Class).ToListAsync();
         }
 
-        // GET: api/StudentClasses/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<StudentClasses>> GetStudentClasses(int id)
-        {
-          if (_context.StudentClasses == null)
-          {
-              return NotFound();
-          }
-            var studentClasses = await _context.StudentClasses.FindAsync(id);
 
-            if (studentClasses == null)
-            {
-                return NotFound();
-            }
 
-            return studentClasses;
-        }
-
-        // PUT: api/StudentClasses/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutStudentClasses(int id, StudentClasses studentClasses)
-        {
-            if (id != studentClasses.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(studentClasses).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!StudentClassesExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
 
         // POST: api/StudentClasses
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
@@ -115,7 +73,26 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
 
             return NoContent();
         }
+        [HttpGet("getStudentBelongingClass")]
+        public async Task<IActionResult> getStudentBelongingClass([FromQuery] string userId)
+        {
+            Console.WriteLine(userId);
+            var StudentClass = _context.StudentClasses.Include(s => s.Student).Include(s => s.Class).Where(s => s.Student.Id == userId).Select(s => new
+            {
+                className = s.Class.ClassName,
 
+
+            }).SingleOrDefault();
+            Console.WriteLine(StudentClass);
+            if (StudentClass == null)
+            {
+                return BadRequest("Class Not found!");
+            }
+            return Ok(new
+            {
+                StudentClass
+            });
+        }
         private bool StudentClassesExists(int id)
         {
             return (_context.StudentClasses?.Any(e => e.Id == id)).GetValueOrDefault();

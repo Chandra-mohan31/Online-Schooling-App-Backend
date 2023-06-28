@@ -36,6 +36,7 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
             try
             {
                 var results = await _context.TimeTable.Include(t => t.Class).Include(t => t.HandlingStaff).Include(t => t.HandlingStaff.Teacher).Include(t => t.HandlingStaff.Subject).Include(t => t.Hour).Select(t => new {
+                    id = t.Id,
                     day = t.Day,
                    
                     Hour = t.Hour.Session,
@@ -56,6 +57,7 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
         }
 
 
+        
 
 
       
@@ -105,6 +107,85 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
+
+        [HttpGet("getSessionDetails")]
+        public async Task<IActionResult> GetSessionDetails(String day,String className,String session)
+        {
+            try
+            {
+                var sessionDetails = _context.TimeTable.Include(T => T.HandlingStaff).Include(T => T.HandlingStaff.Teacher).Include(T => T.HandlingStaff.Subject).Where(T => T.Day == day && T.Class.ClassName == className && T.Hour.Session == session).Select(T => new
+                {
+                    teacher = T.HandlingStaff.Teacher.Email,
+                    subject = T.HandlingStaff.Subject.SubjectName,
+                    meetLink = T.MeetLink
+                }).SingleOrDefault();
+                if(sessionDetails == null)
+                {
+                    return Ok(new
+                    {
+                        sessionDetails = "null"
+                    });
+                }
+                return Ok(new
+                {
+                    sessionDetails = sessionDetails
+                });
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex);
+                return BadRequest(ex.Message);
+            }
+
+
+            return Ok();
+        }
+
+
+
+        [HttpGet("getAllClasses")]
+
+        public async Task<IActionResult> GetAllClasses()
+        {
+            try
+            {
+                var classes = _context.classesAvailable.Select(c => c.ClassName).ToList();
+
+                return Ok(new
+                {
+                    classes = classes
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                return BadRequest(ex.Message);
+            }
+        }
+
+
+        [HttpGet("getAllSessions")]
+
+        public async Task<IActionResult> GetAllSessions()
+        {
+            try
+            {
+                var sessions = _context.ClassHoursTable.ToList();
+
+                return Ok(new
+                {
+                    sessions = sessions
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                return BadRequest(ex.Message);
+            }
+        }
+
+
 
         // GET: api/TimeTables/5
         [HttpGet("{id}")]
@@ -203,9 +284,28 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
             _context.TimeTable.Remove(timeTable);
             await _context.SaveChangesAsync();
 
-            return NoContent();
+            return Ok("Deleted successfully!");
         }
 
+
+        [HttpDelete("deleteAll")]
+        public async Task<IActionResult> ClearTimeTable()
+        {
+            if(_context.TimeTable == null)
+            {
+                return Ok(new { message = "Time table is empty already!" });
+            } 
+            await _context.TimeTable.ExecuteDeleteAsync();
+            _context.SaveChanges();
+
+            return Ok(new { message = "Time table cleared!"});
+
+        }
+
+ 
+
+       
+        
         private bool TimeTableExists(int id)
         {
             return (_context.TimeTable?.Any(e => e.Id == id)).GetValueOrDefault();
