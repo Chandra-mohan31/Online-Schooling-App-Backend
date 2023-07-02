@@ -33,6 +33,27 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
                     
         }
 
+
+        [HttpGet("/handlingSubject/{teacherId}")]
+        public async Task<IActionResult> GetHandlingSubjects([FromRoute] string teacherId)
+        {
+            var teacherSubject = _context.TeacherSubjects.Include(t => t.Teacher).Include(t => t.Subject).Where(t => t.Teacher.Id == teacherId).Select(t => new
+            {
+                subject = t.Subject.SubjectName
+            }).FirstOrDefault();
+
+            if(teacherSubject == null)
+            {
+                return NotFound("subjects handled by the teacher not found!");
+            }
+
+            return Ok(new
+            {
+                teacherSubject
+            });
+        }
+
+
         // GET: api/TeacherSubjects/5
         [HttpGet("{id}")]
         public async Task<ActionResult<TeacherSubjects>> GetTeacherSubjects(int id)

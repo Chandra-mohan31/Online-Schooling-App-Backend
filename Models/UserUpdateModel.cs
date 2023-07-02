@@ -2,15 +2,16 @@
 {
     public class UserUpdateModel
     {
-        public String? UserName;
+        public string? UserName { get; set; }
 
-        public String? Email;
+        public string? Email { get; set; }
 
-        public String? PhoneNumber;
+        public string? PhoneNumber { get; set; }
+
         public DateTime? Dob { get; set; }
 
-        public String? ImageUrl { get; set; }
-        
+        public string? ImageUrl { get; set; }
 
+        public string? Gender { get; set; }
     }
 }

@@ -23,5 +23,7 @@ namespace ONLINE_SCHOOL_BACKEND.Data
         public DbSet<TimeTable> TimeTable { get; set; }
 
 
+        public DbSet<ClassMaterials> ClassStudyMaterials { get; set; }
+
     }
 }

@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using ONLINE_SCHOOL_BACKEND.Data;
 using ONLINE_SCHOOL_BACKEND.Models;
 
 namespace ONLINE_SCHOOL_BACKEND.Controllers
@@ -9,9 +11,13 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
     public class UserManagerController : ControllerBase
     {
         private readonly UserManager<OnlineSchoolUser> _userManager;
-        public UserManagerController(UserManager<OnlineSchoolUser> userManager) { 
+        private readonly OnlineSchoolDbContext _context;
+
+        public UserManagerController(UserManager<OnlineSchoolUser> userManager, OnlineSchoolDbContext context)
+        {
             _userManager = userManager;
-        }  
+            _context = context;
+        }
         [HttpGet]
         public IActionResult GetAllUsers()
         {
@@ -31,47 +37,42 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
         }
 
         [HttpGet("{userId}")]
-        public async Task<IActionResult> GetUserDetailsFromId([FromRoute]String userId)
+        public async Task<IActionResult> GetUserDetailsFromId([FromRoute] String userId)
         {
             Console.WriteLine(userId);
             Console.WriteLine("got the user id");
             var user = await _userManager.FindByIdAsync(userId);
-            if(user == null)
+            if (user == null)
             {
                 return NotFound();
             }
             return Ok(user);
         }
-
-        [HttpPut("users/{userId}")]
-        public async Task<IActionResult> UpdateUserDetails([FromRoute] string userId, UserUpdateModel model)
+        [HttpPut]
+        [Route("users/{userId}")]
+        public async Task<IActionResult> UpdateUser(string userId, UserUpdateModel model)
         {
-            var user = await _userManager.FindByIdAsync(userId);
+            // Check if the user exists in the database
+            var user = _context.Users.FirstOrDefault(u => u.Id == userId);
             if (user == null)
             {
-                return NotFound("User not found.");
+                return NotFound();
             }
-            Console.WriteLine(model.Dob.ToString());
-            Console.WriteLine(model.Dob.ToString());
+            //TODO : verify email while updating details 
+            // Update the user details
+            user.UserName = model.UserName;
+            user.Email = model.Email;
+            user.PhoneNumber = model.PhoneNumber;
+            user.Gender = model.Gender;
+            user.Dob = model.Dob;
+            user.ImageUrl = model.ImageUrl;
 
-            // Update user details based on the model
-            user.UserName = model.UserName != null ? model.UserName : user.UserName;
-            user.Email = model.Email != null ? model.Email : user.Email;
-            user.PhoneNumber = model.PhoneNumber != null ? model.PhoneNumber : user.PhoneNumber;
-            user.Dob = model.Dob != null ? model.Dob : user.Dob;
-            user.ImageUrl = model.ImageUrl != null ? model.ImageUrl : user.ImageUrl;
+            // Add more properties to update as needed
 
-            // Save the changes
-            var result = await _userManager.UpdateAsync(user);
-            if (result.Succeeded)
-            {
-                return Ok("User details updated successfully.");
-            }
+            // Save the changes to the database
+            _context.SaveChanges();
 
-            // If the update fails, return the errors
-            var errors = result.Errors.Select(e => e.Description);
-            return BadRequest(errors);
+            return Ok(new { message = "user details updated!" });
         }
-
     }
-}
+    }
