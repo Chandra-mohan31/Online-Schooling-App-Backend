@@ -14,7 +14,7 @@
 
         public string MaterialContentUrl { get; set; }
 
-        public DateTime PostedOn { get; set; }
+        
 
         public string MaterialContentType { get; set; }
     }

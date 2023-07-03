@@ -25,5 +25,9 @@ namespace ONLINE_SCHOOL_BACKEND.Data
 
         public DbSet<ClassMaterials> ClassStudyMaterials { get; set; }
 
+        public DbSet<AssignmentModel> Assignments { get; set; }
+
+        public DbSet<AssignmentSubmissionsModel> AssignmentSubmissions { get; set; }
+
     }
 }
