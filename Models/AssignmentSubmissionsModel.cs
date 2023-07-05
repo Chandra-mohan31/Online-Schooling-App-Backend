@@ -13,10 +13,13 @@ namespace ONLINE_SCHOOL_BACKEND.Models
 
         public String StudentUserName { get; set; }
 
-
         public String StudentSubmissionFileURL { get; set; }
+        public String? StudentProfileUrl { get; set; }
 
-        public String Status { get; set; }
+
+        public String FileName { get; set; }
+
+        public String FileType { get; set; }
 
         public DateTime SubmissionDateTime { get; set; }
 

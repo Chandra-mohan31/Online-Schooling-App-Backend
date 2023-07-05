@@ -35,6 +35,7 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
           }
             var result =  await _context.ClassStudyMaterials.Include(c => c.ForClass).Include(c => c.PostedBy).Include(c => c.Subject).Select(c =>
             new {
+                c.Id,
                 c.PostedBy.Email,
                 c.Subject.SubjectName,
                 c.ForClass.ClassName,
@@ -59,6 +60,7 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
 
             var classMaterials = await _context.ClassStudyMaterials.Include(c => c.ForClass).Include(c => c.PostedBy).Include(c => c.Subject).Where(c => c.ForClass.ClassName == className).Select(c =>
             new {
+                c.Id,
                 c.PostedBy.Email,
                 c.Subject.SubjectName,
                 c.ForClass.ClassName,
@@ -107,6 +109,35 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
             }
 
             return Ok( new { classMaterials });
+        }
+
+
+
+
+        [HttpGet("postedMaterialsByTeacher/{teacherId}")]
+        public async Task<IActionResult> GetTeacherPostedMaterials([FromRoute]string teacherId)
+        {
+            if (_context.ClassStudyMaterials == null)
+            {
+                return NotFound("no materials found!");
+            }
+            var result = await _context.ClassStudyMaterials.Include(c => c.ForClass).Include(c => c.PostedBy).Include(c => c.Subject).Where(c => c.PostedBy.Id == teacherId).Select(c =>
+            new {
+                c.Id,
+                c.PostedBy.Email,
+                c.Subject.SubjectName,
+                c.ForClass.ClassName,
+                c.MaterialContentUrl,
+                c.MaterialContentType,
+                c.MaterialTitle,
+                c.Description,
+                c.PostedOn
+            }).ToListAsync();
+
+            return Ok(new
+            {
+                materials = result
+            });
         }
 
         // PUT: api/ClassMaterials/5

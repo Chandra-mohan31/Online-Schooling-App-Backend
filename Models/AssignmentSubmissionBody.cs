@@ -10,8 +10,14 @@
 
         public String StudentSubmissionFileURL { get; set; }
 
-        public String Status { get; set; }
 
-        public DateTime SubmissionDateTime { get; set; }
+        public String StudentProfileUrl { get; set; }
+
+
+        public String FileName { get; set; }
+
+        public String FileType { get; set; }
+
+
     }
 }

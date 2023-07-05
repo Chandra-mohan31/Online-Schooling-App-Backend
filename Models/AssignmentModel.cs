@@ -22,5 +22,7 @@ namespace ONLINE_SCHOOL_BACKEND.Models
         public String Description { get; set; } 
 
         public DateTime DueDateTime { get; set; }
+
+        public String? AssignmentCode { get; set; }
     }
 }

@@ -26,16 +26,20 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
         public async Task<IActionResult> GetAllSubmittedAssignments()
         {
 
-            var allAssignmentsSubmitted = _context.AssignmentSubmissions.Include(a => a.Assignment).Select(a =>
+            var allAssignmentsSubmitted = _context.AssignmentSubmissions.Include(a => a.Assignment).Include(a => a.Assignment.ForClass).Select(a =>
             new {
                 a.Id,
                 assignmentTitle = a.Assignment.Title,
                 assignmentId = a.Assignment.Id,
-                
+                a.Assignment.AssignmentCode,
+                a.Assignment.ForClass.ClassName,
+                a.FileName,
+                a.FileType,
+                a.StudentSubmissionFileURL,
                 a.SubmissionDateTime,
                 a.StudentUserName,
-                a.Status,
-                a.StudentSubmissionFileURL,
+                a.StudentProfileUrl,
+                
                 
   
             }).ToList();
@@ -45,6 +49,74 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
           }
             return Ok(new { allAssignmentsSubmitted });
         }
+
+
+
+        //get submission of a user for an assignment
+        [HttpGet("getStudentSubmission/{assignmentId}")]
+        public async Task<IActionResult> GetStudentSubmission([FromRoute]int assignmentId,string username)
+        {
+
+            var studentSubmission = _context.AssignmentSubmissions.Include(a => a.Assignment).Include(a => a.Assignment.ForClass).Where(a => a.Assignment.Id == assignmentId).Where(a => a.StudentUserName == username).Select(a => new 
+            {
+                a.Id,
+                assignmentTitle = a.Assignment.Title,
+                assignmentId = a.Assignment.Id,
+                a.Assignment.AssignmentCode,
+                a.Assignment.ForClass.ClassName,
+                a.FileName,
+                a.FileType,
+                a.StudentSubmissionFileURL,
+                a.SubmissionDateTime,
+                a.StudentUserName,
+                a.StudentProfileUrl,
+            }).FirstOrDefault();
+            if(studentSubmission == null)
+            {
+                return Ok(new
+                {
+                    message = "no submissions Made!"
+                });
+            }
+            return Ok(new
+            {
+                studentSubmission
+            });
+        }
+
+
+
+        [HttpGet("getClassSubmissions/{assignmentCode}")]
+        public async Task<IActionResult> GetClassSubmissions([FromRoute] string assignmentCode, string className)
+        {
+
+            var classSubmissions = _context.AssignmentSubmissions.Include(a => a.Assignment).Include(a => a.Assignment.ForClass).Where(a => a.Assignment.AssignmentCode == assignmentCode).Where(a => a.Assignment.ForClass.ClassName == className).Select(a => new
+            {
+                a.Id,
+                assignmentTitle = a.Assignment.Title,
+                assignmentId = a.Assignment.Id,
+                a.Assignment.AssignmentCode,
+                a.Assignment.ForClass.ClassName,
+                a.FileName,
+                a.FileType,
+                a.StudentSubmissionFileURL,
+                a.SubmissionDateTime,
+                a.StudentUserName,
+                a.StudentProfileUrl,
+            }).ToList();
+            if (classSubmissions == null || classSubmissions.Count == 0)
+            {
+                return Ok(new
+                {
+                    message = "no submissions Made!"
+                });
+            }
+            return Ok(new
+            {
+                classSubmissions
+            });
+        }
+
 
         // GET: api/AssignmentSubmissionsModels/5
         [HttpGet("{id}")]
@@ -79,7 +151,6 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
                 assignmentTitle = a.Assignment.Title,
                 a.SubmissionDateTime,
                 submittedBy = a.StudentUserName,
-                a.Status,
                 a.StudentSubmissionFileURL,
 
 
@@ -136,9 +207,11 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
             AssignmentSubmissionsModel assignmentSubmission = new AssignmentSubmissionsModel();
 
             assignmentSubmission.StudentSubmissionFileURL = body.StudentSubmissionFileURL;
-            assignmentSubmission.SubmissionDateTime = body.SubmissionDateTime;
+            assignmentSubmission.SubmissionDateTime = DateTime.Now;
             assignmentSubmission.StudentUserName = body.StudentUserName;
-            assignmentSubmission.Status = body.Status;
+            assignmentSubmission.StudentProfileUrl = body.StudentProfileUrl;
+            assignmentSubmission.FileName = body.FileName;
+            assignmentSubmission.FileType = body.FileType;
             assignmentSubmission.Assignment = _context.Assignments.Where(a => a.Id == body.AssignmentId).FirstOrDefault();
 
             _context.AssignmentSubmissions.Add(assignmentSubmission);

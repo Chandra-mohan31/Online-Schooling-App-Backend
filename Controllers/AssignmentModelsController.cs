@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ONLINE_SCHOOL_BACKEND.Data;
+using ONLINE_SCHOOL_BACKEND.Migrations;
 using ONLINE_SCHOOL_BACKEND.Models;
 
 namespace ONLINE_SCHOOL_BACKEND.Controllers
@@ -37,7 +38,8 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
                 a.Subject.SubjectName,
                 a.Title,
                 a.Description,
-                a.DueDateTime
+                a.DueDateTime,
+                a.AssignmentCode
             }).ToListAsync();
 
             return Ok(new { 
@@ -62,7 +64,8 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
                 a.Subject.SubjectName,
                 a.Title,
                 a.Description,
-                a.DueDateTime
+                a.DueDateTime,
+                a.AssignmentCode
             }).FirstOrDefaultAsync();
 
             if (assignment == null)
@@ -84,16 +87,40 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
             {
                 return NotFound();
             }
-            var assignmentsPosted = _context.Assignments.Include(a => a.ForClass).Include(a => a.PostedBy).Include(a => a.Subject).Where(a => a.PostedBy.Id == teacherId).Select(a => new
-            {
-                a.Id,
-                a.ForClass.ClassName,
-                a.PostedBy.Email,
-                a.Subject.SubjectName,
-                a.Title,
-                a.Description,
-                a.DueDateTime
-            }).ToList();
+            //var assignmentsPosted = _context.Assignments.Include(a => a.ForClass).Include(a => a.PostedBy).Include(a => a.Subject).Where(a => a.PostedBy.Id == teacherId).Select(a => new
+            //{
+            //    a.Id,
+            //    a.ForClass.ClassName,
+            //    a.PostedBy.Email,
+            //    a.Subject.SubjectName,
+            //    a.Title,
+            //    a.Description,
+            //    a.DueDateTime,
+            //    a.AssignmentCode
+            //}).ToList();
+            var assignmentsPosted = _context.Assignments
+                .Include(a => a.ForClass)
+                .Include(a => a.PostedBy)
+                .Include(a => a.Subject)
+                .Where(a => a.PostedBy.Id == teacherId)
+                .GroupBy(a => a.AssignmentCode) // Group by assignmentCode
+                .Select(g => new
+                {
+                    assignmentCode = g.Key,
+                    description = g.First().Description,
+                    title = g.First().Title,
+                    dueDateTime = g.First().DueDateTime,
+                    email = g.First().PostedBy.Email,
+                    subjectName = g.First().Subject.SubjectName,
+                    assignmentsSubmissionInfo = g.Select(a => new
+                    {
+                        a.Id,
+                        a.ForClass.ClassName,
+                        classTotal = _context.StudentClasses.Include(c => c.Class).Count(s => s.Class.ClassName == a.ForClass.ClassName),
+                        receivedSubmissions = 0
+                    }).ToList()
+                })
+                .ToList();
 
             if (assignmentsPosted == null)
             {
@@ -122,7 +149,8 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
                 a.Subject.SubjectName,
                 a.Title,
                 a.Description,
-                a.DueDateTime
+                a.DueDateTime,
+                a.AssignmentCode
             }).ToList();
 
             if (classAssignments == null)
@@ -173,6 +201,45 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
             });
         }
 
+
+
+        [HttpPut("changeDueDate/{assignmentCode}")]
+        public async Task<IActionResult> ChangeDueDate([FromRoute] string assignmentCode, DateTime newDueDate)
+        {
+            var assignmentsToEdit = _context.Assignments.Where(a => a.AssignmentCode == assignmentCode).ToList();
+
+
+            foreach (var assignment in assignmentsToEdit)
+            {
+                // Update the due date of each assignment
+                assignment.DueDateTime = newDueDate;
+            }
+
+           
+
+
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return Ok("failed to update!");
+            }
+
+            return Ok(new
+            {
+                message = "updated due date successfully!"
+            });
+        }
+
+
+
+
+
+
+
         // POST: api/AssignmentModels
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
@@ -187,6 +254,7 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
             assignmentModel.Title = assignmentBody.Title;
             assignmentModel.Description = assignmentBody.Description;
             assignmentModel.DueDateTime = assignmentBody.DueDateTime;
+            assignmentModel.AssignmentCode = assignmentBody.AssignmentCode;
             _context.Assignments.Add(assignmentModel);
             await _context.SaveChangesAsync();
 
@@ -209,6 +277,38 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
 
             _context.Assignments.Remove(assignmentModel);
             await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = "deleted successfully!"
+            });
+        }
+
+
+
+        [HttpDelete("assignmentPosted/{assignmentCode}")]
+        public async Task<IActionResult> DeletePostedAssignmentUsingCode([FromRoute] string assignmentCode)
+        {
+            var assignmentsToEdit = _context.Assignments.Where(a => a.AssignmentCode == assignmentCode).ToList();
+
+
+            foreach (var assignment in assignmentsToEdit)
+            {
+                _context.Assignments.Remove(assignment);
+            }
+
+
+
+
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return Ok("failed to delete!");
+            }
 
             return Ok(new
             {
