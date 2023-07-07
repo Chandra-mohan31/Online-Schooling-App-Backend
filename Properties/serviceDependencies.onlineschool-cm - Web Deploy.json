@@ -1,0 +1,16 @@
+{
+  "dependencies": {
+    "apis1": {
+      "resourceId": "/subscriptions/[parameters('subscriptionId')]/resourceGroups/[parameters('resourceGroupName')]/providers/Microsoft.ApiManagement/service/onlineschool-cm-api/apis/onlineschool-cm",
+      "type": "apis.azure"
+    },
+    "mssql1": {
+      "serviceConnectorResourceId": "/subscriptions/[parameters('subscriptionId')]/resourceGroups/[parameters('resourceGroupName')]/providers/Microsoft.Web/sites/onlineschool-cm/providers/Microsoft.ServiceLinker/linkers/ConnectionStringsOnlineSchoolingAppConte_7D8E39F400",
+      "secretStore": "AzureAppSettings",
+      "resourceId": "/subscriptions/[parameters('subscriptionId')]/resourceGroups/[parameters('resourceGroupName')]/providers/Microsoft.Sql/servers/onlineschool/databases/onlineSchool",
+      "type": "mssql.azure",
+      "connectionId": "ConnectionStrings:OnlineSchoolingAppContextConnection",
+      "dynamicId": null
+    }
+  }
+}

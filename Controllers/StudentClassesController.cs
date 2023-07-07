@@ -37,6 +37,56 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
         }
 
 
+        [HttpGet("getstudentsofclass/{className}")]
+        public async Task<IActionResult> GetStudentsOfClass([FromRoute]string className)
+        {
+            if (_context.StudentClasses == null)
+            {
+                return NotFound();
+            }
+            var studentsOfClass = _context.StudentClasses.Include(s => s.Class).Include(s => s.Student).Where(a => a.Class.ClassName == className).Select(s=> new
+            {
+                s.Student.Email,
+                s.Student.Id
+            }).ToList();
+            return Ok(new
+            {
+                studentsOfClass
+            });
+        }
+
+
+        [HttpGet("getunsubmittedusers/{assignmentCode}")]
+        public async Task<IActionResult> GetUnSubmittedStudents([FromRoute]string assignmentCode,string className) { 
+            var studentsOfClass = _context.StudentClasses.Include(s => s.Class).Include(s => s.Student).Where(a => a.Class.ClassName == className).Select(s => new
+            {
+                s.Student.Email,
+                s.Student.ImageUrl
+                
+            }).ToList();
+
+            var classSubmissions = _context.AssignmentSubmissions.Include(a => a.Assignment).Include(a => a.Assignment.ForClass).Where(a => a.Assignment.AssignmentCode == assignmentCode).Where(a => a.Assignment.ForClass.ClassName == className).Select(a => new
+            {
+               
+                a.StudentUserName,
+              
+            }).ToList();
+
+            var studentsNotSubmitted = studentsOfClass
+            .Where(s => !classSubmissions.Any(a => a.StudentUserName == s.Email))
+            .Select(s => new
+            {
+                s.Email,
+                s.ImageUrl
+            })
+            .ToList();
+
+            return Ok(new
+            {
+                studentsNotSubmitted
+            });
+
+        }
 
 
         // POST: api/StudentClasses

@@ -117,7 +117,7 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
                         a.Id,
                         a.ForClass.ClassName,
                         classTotal = _context.StudentClasses.Include(c => c.Class).Count(s => s.Class.ClassName == a.ForClass.ClassName),
-                        receivedSubmissions = 0
+                        receivedSubmissions = _context.AssignmentSubmissions.Include(sub => sub.Assignment).Include(sub => sub.Assignment.ForClass).Where(sub => sub.Assignment.AssignmentCode == g.Key && sub.Assignment.ForClass.ClassName == a.ForClass.ClassName).ToList().Count
                     }).ToList()
                 })
                 .ToList();

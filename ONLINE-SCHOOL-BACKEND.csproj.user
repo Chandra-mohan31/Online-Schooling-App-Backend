@@ -13,5 +13,6 @@
     <WebStackScaffolding_LayoutPageFile />
     <WebStackScaffolding_DbContextTypeFullName>ONLINE_SCHOOL_BACKEND.Data.OnlineSchoolDbContext</WebStackScaffolding_DbContextTypeFullName>
     <WebStackScaffolding_IsAsyncSelected>False</WebStackScaffolding_IsAsyncSelected>
+    <NameOfLastUsedPublishProfile>C:\Users\DELL\source\repos\ONLINE-SCHOOL-BACKEND\Properties\PublishProfiles\onlineschool-cm - Web Deploy.pubxml</NameOfLastUsedPublishProfile>
   </PropertyGroup>
 </Project>
