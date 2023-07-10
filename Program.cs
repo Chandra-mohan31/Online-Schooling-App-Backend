@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using ONLINE_SCHOOL_BACKEND.Data;
 using ONLINE_SCHOOL_BACKEND.Models;
 using Microsoft.AspNetCore.Cors;
+using Hangfire;
+using ONLINE_SCHOOL_BACKEND.Services;
 
 namespace ONLINE_SCHOOL_BACKEND
 {
@@ -27,6 +29,14 @@ namespace ONLINE_SCHOOL_BACKEND
 
             builder.Services.AddCors();
 
+
+            //configuring hangfire
+            builder.Services.AddScoped<IJobMailService, JobMailService>();
+            builder.Services.AddHangfire(x => x.UseSqlServerStorage(connectionString));
+            builder.Services.AddHangfireServer();
+
+           
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -41,6 +51,8 @@ namespace ONLINE_SCHOOL_BACKEND
 
             app.UseAuthorization();
 
+
+            app.UseHangfireDashboard();
 
             app.MapControllers();
 

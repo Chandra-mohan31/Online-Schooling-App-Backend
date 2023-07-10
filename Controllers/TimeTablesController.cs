@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using MimeKit;
 using ONLINE_SCHOOL_BACKEND.Data;
 using ONLINE_SCHOOL_BACKEND.Migrations;
 using ONLINE_SCHOOL_BACKEND.Models;
@@ -18,11 +20,14 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
     {
         private readonly OnlineSchoolDbContext _context;
         private readonly UserManager<OnlineSchoolUser> _userManager;
+        private readonly IConfiguration _configuration;
 
-        public TimeTablesController(OnlineSchoolDbContext context,UserManager<OnlineSchoolUser> userManager)
+
+        public TimeTablesController(OnlineSchoolDbContext context,UserManager<OnlineSchoolUser> userManager, IConfiguration configuration)
         {
             _context = context;
             _userManager = userManager;
+            _configuration = configuration;
         }
 
         // GET: api/TimeTables
@@ -56,11 +61,147 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
             }
         }
 
+        [NonAction]
+        private void SendMail(String emailSubject, String emailMessage, String toEmail)
+        {
+            toEmail = "testname1234554321@gmail.com";//for testing purposes
+            try
+            {
 
-        
+                string fromPassword = _configuration["fromEmailPass"];
+                var email = new MimeMessage();
+                email.From.Add(MailboxAddress.Parse("testname1234554321@gmail.com"));
+                email.To.Add(MailboxAddress.Parse(toEmail));
+                email.Subject = emailSubject;
+
+                email.Body = new TextPart(MimeKit.Text.TextFormat.Html)
+                {
+                    Text = emailMessage,
+
+                };
+
+                using var smtp = new MailKit.Net.Smtp.SmtpClient();
+                smtp.Connect("smtp.gmail.com", 587, MailKit.Security.SecureSocketOptions.StartTls);
+
+                smtp.Authenticate("testname1234554321@gmail.com", fromPassword);
+
+                smtp.Send(email);
+                smtp.Disconnect(true);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+        }
+
+        //[NonAction]
+        [HttpGet("mailrecurring")]
+        public async Task<IActionResult> MailTimeTable()
+        {
+
+            String emailSubject = "Your Schedule for the Day";
+            var users = _context.Users.ToList();
+            
+            StringBuilder emailMessage = new StringBuilder();
+            
+
+            string dayOfWeek = DateTime.Today.ToString("dddd");
+            string capitalizedDay = char.ToUpper(dayOfWeek[0]) + dayOfWeek.Substring(1);
+            Console.WriteLine(capitalizedDay);
 
 
-      
+            var results = await _context.TimeTable.Include(t => t.Class).Include(t => t.HandlingStaff).Include(t => t.HandlingStaff.Teacher).Include(t => t.HandlingStaff.Subject).Include(t => t.Hour).Where(t => t.Day == capitalizedDay).Select(t => new {
+                id = t.Id,
+                day = t.Day,
+
+                Hour = t.Hour.Timing,
+                ForClass = t.Class.ClassName,
+                HandledBy = t.HandlingStaff.Teacher.Id,
+                handledByUserName = t.HandlingStaff.Teacher.UserName,
+                Subject = t.HandlingStaff.Subject.SubjectName,
+                MeetingURL = t.MeetLink
+
+            }).ToListAsync();
+
+            foreach (var user in users)
+            {
+                
+                var roles = await _userManager.GetRolesAsync(user);
+                var userRole = roles[0];
+
+                if(userRole == "Teacher")
+                {
+                    var res = results.Where(r => r.HandledBy == user.Id).ToList();
+                    //Console.WriteLine(user.Id + " : Teacher");
+                    Console.WriteLine(res.Count);
+                    if (res.Count > 0)
+                    {
+                        emailMessage.AppendLine("<table>");
+                        emailMessage.AppendLine("<tr><th>Hour</th><th>Class</th><th>Handled By</th><th>Subject</th><th>Meeting CODE</th></tr>");
+                        foreach (var item in res)
+                        {
+                            emailMessage.AppendLine("<tr>");
+                            emailMessage.AppendLine($"<td>{item.Hour}</td>");
+                            emailMessage.AppendLine($"<td>{item.ForClass}</td>");
+                            emailMessage.AppendLine($"<td>{"you"}</td>");
+                            emailMessage.AppendLine($"<td>{item.Subject}</td>");
+                            emailMessage.AppendLine($"<td>{item.MeetingURL}</td>");
+                            emailMessage.AppendLine("</tr>");
+                        }
+                        
+                    }
+                    emailMessage.AppendLine("</table>");
+                    Console.WriteLine(emailMessage);
+                    //send the table as mail and set the emailMessage back to empty
+                    SendMail(emailSubject, emailMessage.ToString(), user.Email);
+                    emailMessage.Clear();
+
+
+                }
+                else if(userRole == "Student")
+                {
+                    var belongingClass = _context.StudentClasses.Include(s => s.Class).Include(s => s.Student).Where(s => s.Student.Id == user.Id).FirstOrDefault();
+                    if(belongingClass != null)
+                    {
+                        Console.WriteLine(belongingClass.Class.ClassName);
+                        var res = results.Where(r => r.ForClass == belongingClass.Class.ClassName).ToList();
+                        Console.WriteLine(res.Count);
+                        if (res.Count > 0)
+                        {
+                            emailMessage.AppendLine("<table>");
+                            emailMessage.AppendLine("<tr><th>Hour</th><th>Class</th><th>Handled By</th><th>Subject</th><th>Meeting CODE</th></tr>");
+                            foreach (var item in res)
+                            {
+                                emailMessage.AppendLine("<tr>");
+                                emailMessage.AppendLine($"<td>{item.Hour}</td>");
+                                emailMessage.AppendLine($"<td>{item.ForClass}</td>");
+                                emailMessage.AppendLine($"<td>{item.handledByUserName}</td>");
+                                emailMessage.AppendLine($"<td>{item.Subject}</td>");
+                                emailMessage.AppendLine($"<td>{item.MeetingURL}</td>");
+                                emailMessage.AppendLine("</tr>");
+                            }
+                        }
+                        emailMessage.AppendLine("</table>");
+                        Console.WriteLine(emailMessage);
+
+                        //send the table as mail and set the emailMessage back to empty
+                        SendMail(emailSubject, emailMessage.ToString(), user.Email);
+
+                        emailMessage.Clear();
+
+                    }
+
+
+                }
+            }
+           
+
+            return Ok();
+        }
+
+
+
+
 
 
         [HttpGet("get_sessions")]

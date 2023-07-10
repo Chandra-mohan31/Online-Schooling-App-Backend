@@ -85,7 +85,7 @@ namespace ONLINE_SCHOOL_BACKEND.Controllers
                 var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                 var encodedToken = HttpUtility.UrlEncode(token);
                 Console.WriteLine(encodedToken);
-                var confirmationLink = "https://localhost:7274/api/Authentication/confirm-email?userId=" + user.Id + "&token="+encodedToken;
+                var confirmationLink = "https://onlineschool-cm.azurewebsites.net/api/Authentication/confirm-email?userId=" + user.Id + "&token="+encodedToken;
            
 
 
